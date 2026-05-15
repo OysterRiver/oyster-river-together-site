@@ -21,12 +21,10 @@
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
       gtag('js', new Date());
-
       gtag('config', 'G-69J55Z3B8G');
     </script>
 
     <script>
-      // Tracks when someone clicks the area where the form is
       window.addEventListener('blur', function() {
         if (document.activeElement.tagName === 'IFRAME') {
           gtag('event', 'form_start_click', {
@@ -51,15 +49,32 @@
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
         }
 
-        /* --- CAROUSEL STYLES --- */
+        /* --- PETITION WRAPPER (Now starts at the top) --- */
+        .wrapper {
+            position: absolute;
+            top: 0; 
+            left: 0;
+            width: 100%;
+            height: calc(100% - 55px); /* Leaves exact room for the carousel at the bottom */
+            overflow: hidden; 
+        }
+
+        iframe {
+            width: 100%;
+            height: calc(100% + 45px); /* Keeps the Tally badge pushed out of view */
+            border: none;
+            display: block;
+        }
+
+        /* --- CAROUSEL STYLES (Now anchored to the bottom) --- */
         .carousel-bar {
             position: absolute;
-            top: 0;
+            bottom: 0; /* Moved from top: 0 to bottom: 0 */
             left: 0;
             width: 100%;
             height: 55px;
             background-color: #ffffff;
-            border-bottom: 1px solid #e2e8f0;
+            border-top: 1px solid #e2e8f0; /* Line moved to the top of the bar */
             color: #334155;
             display: flex;
             align-items: center;
@@ -93,9 +108,17 @@
             text-overflow: ellipsis; 
         }
 
+        /* Makes the comment look clickable to users */
         .comment-text {
             font-style: italic;
             color: #475569; 
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+
+        .comment-text:hover {
+            color: #0f172a;
+            text-decoration: underline;
         }
 
         .carousel-controls {
@@ -119,28 +142,58 @@
             background-color: #f1f5f9;
         }
 
-        /* --- PETITION WRAPPER --- */
-        .wrapper {
-            position: absolute;
-            top: 55px; 
-            left: 0;
-            width: 100%;
-            height: calc(100% - 55px); 
-            overflow: hidden; 
+        /* --- MODAL FOR LONG COMMENTS --- */
+        .modal-overlay {
+            display: none; /* Hidden by default */
+            position: fixed;
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%;
+            background: rgba(15, 23, 42, 0.6); /* Dark semi-transparent background */
+            z-index: 2000;
+            align-items: center; 
+            justify-content: center;
+            backdrop-filter: blur(3px); /* Elegant blur effect */
         }
 
-        iframe {
-            width: 100%;
-            height: calc(100% + 45px); 
-            border: none;
-            display: block;
+        .modal-content {
+            background: #ffffff;
+            padding: 30px;
+            border-radius: 8px;
+            max-width: 85%;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            position: relative;
+            font-size: 18px;
+            line-height: 1.6;
+            color: #1e293b;
+            font-style: italic;
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 10px; 
+            right: 15px;
+            cursor: pointer;
+            font-size: 24px;
+            color: #94a3b8;
+            transition: color 0.2s;
+        }
+
+        .modal-close:hover {
+            color: #e53e3e;
         }
     </style>
 </head>
 <body>
     
+    <div class="wrapper">
+        <iframe data-tally-src="https://tally.so/r/PdvjOb?transparentBackground=1&formEventsForwarding=1" width="100%" frameborder="0" marginheight="0" marginwidth="0" title="Vote of No Confidence in Superintendent Dr. Robert Shaps"></iframe>
+    </div>
+
     <div class="carousel-bar">
-        
         <div class="carousel-count">
             <span id="signature-count">...</span>&nbsp;Supporters
         </div>
@@ -156,14 +209,16 @@
         </div>
     </div>
 
-    <div class="wrapper">
-        <iframe data-tally-src="https://tally.so/r/PdvjOb?transparentBackground=1&formEventsForwarding=1" width="100%" frameborder="0" marginheight="0" marginwidth="0" title="Vote of No Confidence in Superintendent Dr. Robert Shaps"></iframe>
+    <div id="comment-modal" class="modal-overlay" onclick="closeModal()">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <span class="modal-close" onclick="closeModal()">&times;</span>
+            <div id="modal-text"></div>
+        </div>
     </div>
 
     <script async src="https://tally.so/widgets/embed.js"></script>
 
     <script>
-        // Your live Google Sheets CSV link
         const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTif9kpFENTSs10nUids_7CKozvj__dv8flbzr2hr7kTVdik0iHl3qOUS3HWxwhWNs73HevA1iq450Z/pub?gid=601182203&single=true&output=csv";
 
         let commentsArray = [];
@@ -176,27 +231,22 @@
             header: true,
             complete: function(results) {
                 const data = results.data;
-                
                 let validSignatureCount = 0;
 
-                // Loop through data to count total signatures and grab comments
                 data.forEach(row => {
-                    // Check if the row has any data at all (ignores trailing empty rows from Google Sheets)
-                    if (Object.values(row).join('').trim() !== '') {
+                    // Counts every row that isn't entirely blank
+                    if (Object.keys(row).length > 0 && Object.values(row).join('').trim() !== '') {
                         validSignatureCount++;
                     }
 
-                    // Look strictly for the 'Comments' column and ensure it isn't empty
+                    // Extracts and stores valid comments
                     if(row['Comments'] && row['Comments'].trim() !== '') {
-                        // We format the comment elegantly with quotes
-                        commentsArray.push(`<span class="comment-text">"${row['Comments'].trim()}"</span>`);
+                        commentsArray.push(row['Comments'].trim());
                     }
                 });
 
-                // Update the total supporter count on the page
                 document.getElementById('signature-count').innerText = validSignatureCount.toLocaleString();
 
-                // If there are valid comments, start the carousel
                 if(commentsArray.length > 0) {
                     showComment(0);
                     startTimer();
@@ -213,15 +263,44 @@
             else if(index < 0) currentIndex = commentsArray.length - 1;
             else currentIndex = index;
 
-            document.getElementById('active-comment').innerHTML = commentsArray[currentIndex];
+            let rawComment = commentsArray[currentIndex];
+            
+            // Injects the comment with an onClick function to open the modal
+            document.getElementById('active-comment').innerHTML = 
+                `<span class="comment-text" onclick="openModal()" title="Click to read full comment">"${rawComment}"</span>`;
         }
 
+        // Modal Functions
+        function openModal() {
+            document.getElementById('modal-text').innerText = '"' + commentsArray[currentIndex] + '"';
+            document.getElementById('comment-modal').style.display = 'flex';
+            
+            // Auto-pause the carousel while they read
+            isPaused = true;
+            document.getElementById('btn-pause').innerText = '▶';
+        }
+
+        function closeModal() {
+            document.getElementById('comment-modal').style.display = 'none';
+            
+            // Un-pause when they close the modal
+            isPaused = false;
+            document.getElementById('btn-pause').innerText = '⏸';
+        }
+
+        // Timer Functions
         function startTimer() {
             carouselTimer = setInterval(() => {
                 if(!isPaused) showComment(currentIndex + 1);
             }, 7000); 
         }
 
+        function resetTimer() {
+            clearInterval(carouselTimer);
+            startTimer();
+        }
+
+        // Button Listeners
         document.getElementById('btn-next').addEventListener('click', () => {
             showComment(currentIndex + 1);
             resetTimer(); 
@@ -237,11 +316,6 @@
             e.target.innerText = isPaused ? '▶' : '⏸';
             e.target.title = isPaused ? 'Play' : 'Pause';
         });
-
-        function resetTimer() {
-            clearInterval(carouselTimer);
-            startTimer();
-        }
     </script>
 
 </body>
