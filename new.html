@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
+    
+    <title>Vote of No Confidence in Superintendent Dr. Robert Shaps</title>
+
+    <meta property="og:title" content="Vote of No Confidence in Superintendent Dr. Robert Shaps">
+    <meta property="og:description" content="Click here to view and sign the community petition.">
+    <meta property="og:url" content="https://oysterrivertogether.com">
+    <meta property="og:type" content="website">
+    <meta property="og:image" content="https://oysterrivertogether.com/site_image.jpg">
+    
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Vote of No Confidence in Superintendent Dr. Robert Shaps">
+    <meta name="twitter:image" content="https://oysterrivertogether.com/site_image.jpg">
+
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-69J55Z3B8G"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-69J55Z3B8G');
+    </script>
+
+    <script>
+      // This tracks when someone clicks the area where the form is
+      window.addEventListener('blur', function() {
+        if (document.activeElement.tagName === 'IFRAME') {
+          // If you have GA4 installed, this sends a "Form Interaction" event
+          gtag('event', 'form_start_click', {
+            'event_category': 'engagement',
+            'event_label': 'Tally Petition Start'
+          });
+        }
+      });
+    </script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+
+    <style type="text/css">
+        /* This container acts as a 'window' that is exactly the size of the screen */
+        body, html { 
+            margin: 0; 
+            padding: 0; 
+            height: 100%; 
+            width: 100%; 
+            overflow: hidden; /* This prevents the user from scrolling past the crop */
+            overscroll-behavior: none; /* This prevents the "bounce" that reveals the badge on mobile */
+            background-color: #ffffff;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        /* --- CAROUSEL STYLES --- */
+        .carousel-bar {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 50px;
+            background-color: #1a202c; /* Sleek dark gray/black */
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            overflow: hidden;
+            z-index: 1000;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .carousel-count {
+            background-color: #e53e3e; /* Action red */
+            padding: 0 15px;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            font-weight: 700;
+            white-space: nowrap;
+            font-size: 14px;
+        }
+
+        .carousel-content {
+            flex-grow: 1;
+            padding: 0 20px;
+            text-align: center;
+            font-size: 14px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis; /* Adds '...' if comment is too long for screen */
+        }
+
+        .comment-name {
+            color: #fbd38d; /* Soft yellow to pop against dark background */
+            font-weight: bold;
+            margin-right: 5px;
+        }
+
+        .carousel-controls {
+            display: flex;
+            padding-right: 10px;
+        }
+
+        .carousel-controls button {
+            background: none;
+            border: none;
+            color: #a0aec0;
+            font-size: 16px;
+            cursor: pointer;
+            padding: 5px 10px;
+            transition: color 0.2s;
+        }
+
+        .carousel-controls button:hover {
+            color: #ffffff;
+        }
+
+        /* The wrapper is the 'frame' that crops the iframe */
+        .wrapper {
+            position: absolute;
+            top: 50px; /* Pushed down exactly the height of the carousel */
+            left: 0;
+            width: 100%;
+            height: calc(100% - 50px); /* Reduced height to account for the carousel */
+            overflow: hidden; 
+        }
+
+        iframe {
+            width: 100%;
+            /* This makes the form 45 pixels taller than the screen, pushing the Tally badge 'under' the bottom edge */
+            height: calc(100% + 45px); 
+            border: none;
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    
+    <div class="carousel-bar">
+        <div class="carousel-count">
+            <span id="signature-count">...</span>&nbsp;Signatures
+        </div>
+        
+        <div class="carousel-content" id="active-comment">
+            Loading community comments...
+        </div>
+
+        <div class="carousel-controls">
+            <button id="btn-prev" title="Previous Comment">◀</button>
+            <button id="btn-pause" title="Pause/Play">⏸</button>
+            <button id="btn-next" title="Next Comment">▶</button>
+        </div>
+    </div>
+
+    <div class="wrapper">
+        <iframe data-tally-src="https://tally.so/r/PdvjOb?transparentBackground=1&formEventsForwarding=1" width="100%" frameborder="0" marginheight="0" marginwidth="0" title="Vote of No Confidence in Superintendent Dr. Robert Shaps"></iframe>
+    </div>
+
+    <script async src="https://tally.so/widgets/embed.js"></script>
+
+    <script>
+        // *** IMPORTANT: PASTE YOUR GOOGLE SHEETS CSV LINK HERE ***
+        const csvUrl = "YOUR_GOOGLE_SHEET_PUBLISHED_CSV_LINK_HERE";
+
+        let commentsArray = [];
+        let currentIndex = 0;
+        let carouselTimer;
+        let isPaused = false;
+
+        // Fetch and parse the data
+        Papa.parse(csvUrl, {
+            download: true,
+            header: true,
+            complete: function(results) {
+                const data = results.data;
+                
+                // Update Total Signatures count
+                const totalSignatures = data.length > 0 ? data.length - 1 : 0;
+                document.getElementById('signature-count').innerText = totalSignatures.toLocaleString();
+
+                // Store all valid comments in an array
+                data.forEach(row => {
+                    // Make sure 'Name' and 'Comment' match your Google Sheet headers exactly
+                    if(row['Name'] && row['Comment']) {
+                        commentsArray.push(`<span class="comment-name">${row['Name']}:</span> "${row['Comment']}"`);
+                    }
+                });
+
+                // If we have comments, start the show
+                if(commentsArray.length > 0) {
+                    showComment(0);
+                    startTimer();
+                } else {
+                    document.getElementById('active-comment').innerText = "Be the first to leave a comment!";
+                }
+            }
+        });
+
+        function showComment(index) {
+            if(commentsArray.length === 0) return;
+            
+            // Handle looping forwards and backwards
+            if(index >= commentsArray.length) currentIndex = 0;
+            else if(index < 0) currentIndex = commentsArray.length - 1;
+            else currentIndex = index;
+
+            document.getElementById('active-comment').innerHTML = commentsArray[currentIndex];
+        }
+
+        function startTimer() {
+            // Rotates every 7 seconds (7000 milliseconds)
+            carouselTimer = setInterval(() => {
+                if(!isPaused) showComment(currentIndex + 1);
+            }, 7000); 
+        }
+
+        // Button Event Listeners
+        document.getElementById('btn-next').addEventListener('click', () => {
+            showComment(currentIndex + 1);
+            resetTimer(); // Reset the clock so it doesn't instantly flip again
+        });
+
+        document.getElementById('btn-prev').addEventListener('click', () => {
+            showComment(currentIndex - 1);
+            resetTimer();
+        });
+
+        document.getElementById('btn-pause').addEventListener('click', (e) => {
+            isPaused = !isPaused;
+            e.target.innerText = isPaused ? '▶' : '⏸';
+            e.target.title = isPaused ? 'Play' : 'Pause';
+        });
+
+        function resetTimer() {
+            clearInterval(carouselTimer);
+            startTimer();
+        }
+    </script>
+
+</body>
+</html>
