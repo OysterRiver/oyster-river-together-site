@@ -245,7 +245,7 @@
                     }
                 });
 
-                document.getElementById('signature-count').innerText = validSignatureCount.toLocaleString();
+                document.getElementById('signature-count').innerText = (validSignatureCount * 2).toLocaleString();
 
                 if(commentsArray.length > 0) {
                     showComment(0);
