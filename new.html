@@ -26,10 +26,9 @@
     </script>
 
     <script>
-      // This tracks when someone clicks the area where the form is
+      // Tracks when someone clicks the area where the form is
       window.addEventListener('blur', function() {
         if (document.activeElement.tagName === 'IFRAME') {
-          // If you have GA4 installed, this sends a "Form Interaction" event
           gtag('event', 'form_start_click', {
             'event_category': 'engagement',
             'event_label': 'Tally Petition Start'
@@ -41,14 +40,13 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 
     <style type="text/css">
-        /* This container acts as a 'window' that is exactly the size of the screen */
         body, html { 
             margin: 0; 
             padding: 0; 
             height: 100%; 
             width: 100%; 
-            overflow: hidden; /* This prevents the user from scrolling past the crop */
-            overscroll-behavior: none; /* This prevents the "bounce" that reveals the badge on mobile */
+            overflow: hidden; 
+            overscroll-behavior: none; 
             background-color: #ffffff;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
         }
@@ -59,76 +57,80 @@
             top: 0;
             left: 0;
             width: 100%;
-            height: 50px;
-            background-color: #1a202c; /* Sleek dark gray/black */
-            color: #ffffff;
+            height: 55px;
+            background-color: #ffffff;
+            border-bottom: 1px solid #e2e8f0;
+            color: #334155;
             display: flex;
             align-items: center;
             justify-content: space-between;
             overflow: hidden;
             z-index: 1000;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            box-sizing: border-box;
+            padding: 0 15px;
         }
 
         .carousel-count {
-            background-color: #e53e3e; /* Action red */
-            padding: 0 15px;
-            height: 100%;
+            background-color: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            padding: 6px 12px;
+            font-weight: 600;
+            font-size: 13px;
+            color: #0f172a;
             display: flex;
             align-items: center;
-            font-weight: 700;
             white-space: nowrap;
-            font-size: 14px;
         }
 
         .carousel-content {
             flex-grow: 1;
             padding: 0 20px;
             text-align: center;
-            font-size: 14px;
+            font-size: 15px;
             white-space: nowrap;
             overflow: hidden;
-            text-overflow: ellipsis; /* Adds '...' if comment is too long for screen */
+            text-overflow: ellipsis; 
         }
 
-        .comment-name {
-            color: #fbd38d; /* Soft yellow to pop against dark background */
-            font-weight: bold;
-            margin-right: 5px;
+        .comment-text {
+            font-style: italic;
+            color: #475569; 
         }
 
         .carousel-controls {
             display: flex;
-            padding-right: 10px;
+            gap: 5px;
         }
 
         .carousel-controls button {
             background: none;
             border: none;
-            color: #a0aec0;
-            font-size: 16px;
+            color: #94a3b8; 
+            font-size: 14px;
             cursor: pointer;
-            padding: 5px 10px;
-            transition: color 0.2s;
+            padding: 5px 8px;
+            border-radius: 4px;
+            transition: all 0.2s;
         }
 
         .carousel-controls button:hover {
-            color: #ffffff;
+            color: #0f172a;
+            background-color: #f1f5f9;
         }
 
-        /* The wrapper is the 'frame' that crops the iframe */
+        /* --- PETITION WRAPPER --- */
         .wrapper {
             position: absolute;
-            top: 50px; /* Pushed down exactly the height of the carousel */
+            top: 55px; 
             left: 0;
             width: 100%;
-            height: calc(100% - 50px); /* Reduced height to account for the carousel */
+            height: calc(100% - 55px); 
             overflow: hidden; 
         }
 
         iframe {
             width: 100%;
-            /* This makes the form 45 pixels taller than the screen, pushing the Tally badge 'under' the bottom edge */
             height: calc(100% + 45px); 
             border: none;
             display: block;
@@ -138,8 +140,9 @@
 <body>
     
     <div class="carousel-bar">
+        
         <div class="carousel-count">
-            <span id="signature-count">...</span>&nbsp;Signatures
+            <span id="signature-count">...</span>&nbsp;Supporters
         </div>
         
         <div class="carousel-content" id="active-comment">
@@ -160,39 +163,45 @@
     <script async src="https://tally.so/widgets/embed.js"></script>
 
     <script>
-        // *** IMPORTANT: PASTE YOUR GOOGLE SHEETS CSV LINK HERE ***
-        const csvUrl = "YOUR_GOOGLE_SHEET_PUBLISHED_CSV_LINK_HERE";
+        // Your live Google Sheets CSV link
+        const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTif9kpFENTSs10nUids_7CKozvj__dv8flbzr2hr7kTVdik0iHl3qOUS3HWxwhWNs73HevA1iq450Z/pub?gid=601182203&single=true&output=csv";
 
         let commentsArray = [];
         let currentIndex = 0;
         let carouselTimer;
         let isPaused = false;
 
-        // Fetch and parse the data
         Papa.parse(csvUrl, {
             download: true,
             header: true,
             complete: function(results) {
                 const data = results.data;
                 
-                // Update Total Signatures count
-                const totalSignatures = data.length > 0 ? data.length - 1 : 0;
-                document.getElementById('signature-count').innerText = totalSignatures.toLocaleString();
+                let validSignatureCount = 0;
 
-                // Store all valid comments in an array
+                // Loop through data to count total signatures and grab comments
                 data.forEach(row => {
-                    // Make sure 'Name' and 'Comment' match your Google Sheet headers exactly
-                    if(row['Name'] && row['Comment']) {
-                        commentsArray.push(`<span class="comment-name">${row['Name']}:</span> "${row['Comment']}"`);
+                    // Check if the row has any data at all (ignores trailing empty rows from Google Sheets)
+                    if (Object.values(row).join('').trim() !== '') {
+                        validSignatureCount++;
+                    }
+
+                    // Look strictly for the 'Comments' column and ensure it isn't empty
+                    if(row['Comments'] && row['Comments'].trim() !== '') {
+                        // We format the comment elegantly with quotes
+                        commentsArray.push(`<span class="comment-text">"${row['Comments'].trim()}"</span>`);
                     }
                 });
 
-                // If we have comments, start the show
+                // Update the total supporter count on the page
+                document.getElementById('signature-count').innerText = validSignatureCount.toLocaleString();
+
+                // If there are valid comments, start the carousel
                 if(commentsArray.length > 0) {
                     showComment(0);
                     startTimer();
                 } else {
-                    document.getElementById('active-comment').innerText = "Be the first to leave a comment!";
+                    document.getElementById('active-comment').innerHTML = "<span class='comment-text'>Be the first to leave a comment!</span>";
                 }
             }
         });
@@ -200,7 +209,6 @@
         function showComment(index) {
             if(commentsArray.length === 0) return;
             
-            // Handle looping forwards and backwards
             if(index >= commentsArray.length) currentIndex = 0;
             else if(index < 0) currentIndex = commentsArray.length - 1;
             else currentIndex = index;
@@ -209,16 +217,14 @@
         }
 
         function startTimer() {
-            // Rotates every 7 seconds (7000 milliseconds)
             carouselTimer = setInterval(() => {
                 if(!isPaused) showComment(currentIndex + 1);
             }, 7000); 
         }
 
-        // Button Event Listeners
         document.getElementById('btn-next').addEventListener('click', () => {
             showComment(currentIndex + 1);
-            resetTimer(); // Reset the clock so it doesn't instantly flip again
+            resetTimer(); 
         });
 
         document.getElementById('btn-prev').addEventListener('click', () => {
