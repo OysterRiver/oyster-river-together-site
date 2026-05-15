@@ -49,32 +49,30 @@
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
         }
 
-        /* --- PETITION WRAPPER (Now starts at the top) --- */
         .wrapper {
             position: absolute;
             top: 0; 
             left: 0;
             width: 100%;
-            height: calc(100% - 55px); /* Leaves exact room for the carousel at the bottom */
+            height: calc(100% - 55px); 
             overflow: hidden; 
         }
 
         iframe {
             width: 100%;
-            height: calc(100% + 45px); /* Keeps the Tally badge pushed out of view */
+            height: calc(100% + 45px); 
             border: none;
             display: block;
         }
 
-        /* --- CAROUSEL STYLES (Now anchored to the bottom) --- */
         .carousel-bar {
             position: absolute;
-            bottom: 0; /* Moved from top: 0 to bottom: 0 */
+            bottom: 0; 
             left: 0;
             width: 100%;
             height: 55px;
             background-color: #ffffff;
-            border-top: 1px solid #e2e8f0; /* Line moved to the top of the bar */
+            border-top: 1px solid #e2e8f0; 
             color: #334155;
             display: flex;
             align-items: center;
@@ -108,7 +106,6 @@
             text-overflow: ellipsis; 
         }
 
-        /* Makes the comment look clickable to users */
         .comment-text {
             font-style: italic;
             color: #475569; 
@@ -142,19 +139,18 @@
             background-color: #f1f5f9;
         }
 
-        /* --- MODAL FOR LONG COMMENTS --- */
         .modal-overlay {
-            display: none; /* Hidden by default */
+            display: none; 
             position: fixed;
             top: 0; 
             left: 0; 
             width: 100%; 
             height: 100%;
-            background: rgba(15, 23, 42, 0.6); /* Dark semi-transparent background */
+            background: rgba(15, 23, 42, 0.6); 
             z-index: 2000;
             align-items: center; 
             justify-content: center;
-            backdrop-filter: blur(3px); /* Elegant blur effect */
+            backdrop-filter: blur(3px); 
         }
 
         .modal-content {
@@ -220,6 +216,9 @@
 
     <script>
         const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTif9kpFENTSs10nUids_7CKozvj__dv8flbzr2hr7kTVdik0iHl3qOUS3HWxwhWNs73HevA1iq450Z/pub?gid=601182203&single=true&output=csv";
+        
+        // *** CHANGE THIS IF YOUR NEW COLUMN HAS A DIFFERENT HEADER NAME ***
+        const moderationColumnName = "Allowed"; 
 
         let commentsArray = [];
         let currentIndex = 0;
@@ -234,24 +233,28 @@
                 let validSignatureCount = 0;
 
                 data.forEach(row => {
-                    // Counts every row that isn't entirely blank
+                    // 1. Count Total Signatures (Multiplier kept at 2)
                     if (Object.keys(row).length > 0 && Object.values(row).join('').trim() !== '') {
                         validSignatureCount++;
                     }
 
-                    // Extracts and stores valid comments
-                    if(row['Comments'] && row['Comments'].trim() !== '') {
+                    // 2. Check if comment exists AND if the moderation column has a value
+                    let hasComment = row['Comments'] && row['Comments'].trim() !== '';
+                    let isApproved = row[moderationColumnName] && row[moderationColumnName].trim() !== '';
+
+                    if(hasComment && isApproved) {
                         commentsArray.push(row['Comments'].trim());
                     }
                 });
 
+                // Display the multiplied count
                 document.getElementById('signature-count').innerText = (validSignatureCount * 2).toLocaleString();
 
                 if(commentsArray.length > 0) {
                     showComment(0);
                     startTimer();
                 } else {
-                    document.getElementById('active-comment').innerHTML = "<span class='comment-text'>Be the first to leave a comment!</span>";
+                    document.getElementById('active-comment').innerHTML = "<span class='comment-text'>No approved comments yet.</span>";
                 }
             }
         });
@@ -265,17 +268,14 @@
 
             let rawComment = commentsArray[currentIndex];
             
-            // Injects the comment with an onClick function to open the modal
             document.getElementById('active-comment').innerHTML = 
                 `<span class="comment-text" onclick="openModal()" title="Click to read full comment">"${rawComment}"</span>`;
         }
 
-        // Modal Functions
         function openModal() {
             document.getElementById('modal-text').innerText = '"' + commentsArray[currentIndex] + '"';
             document.getElementById('comment-modal').style.display = 'flex';
             
-            // Auto-pause the carousel while they read
             isPaused = true;
             document.getElementById('btn-pause').innerText = '▶';
         }
@@ -283,12 +283,10 @@
         function closeModal() {
             document.getElementById('comment-modal').style.display = 'none';
             
-            // Un-pause when they close the modal
             isPaused = false;
             document.getElementById('btn-pause').innerText = '⏸';
         }
 
-        // Timer Functions
         function startTimer() {
             carouselTimer = setInterval(() => {
                 if(!isPaused) showComment(currentIndex + 1);
@@ -300,7 +298,6 @@
             startTimer();
         }
 
-        // Button Listeners
         document.getElementById('btn-next').addEventListener('click', () => {
             showComment(currentIndex + 1);
             resetTimer(); 
