@@ -215,50 +215,62 @@
     <script async src="https://tally.so/widgets/embed.js"></script>
 
     <script>
-        const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTif9kpFENTSs10nUids_7CKozvj__dv8flbzr2hr7kTVdik0iHl3qOUS3HWxwhWNs73HevA1iq450Z/pub?gid=601182203&single=true&output=csv";
-        
-        // *** CHANGE THIS IF YOUR NEW COLUMN HAS A DIFFERENT HEADER NAME ***
-        const moderationColumnName = "Allowed"; 
+        // *** PASTE YOUR TWO NEW CSV LINKS HERE ***
+        const approvedCommentsCsvUrl = "YOUR_COMMENTS_TAB_CSV_LINK_HERE";
+        const totalIdsCsvUrl = "YOUR_IDS_TAB_CSV_LINK_HERE";
 
         let commentsArray = [];
         let currentIndex = 0;
         let carouselTimer;
         let isPaused = false;
 
-        Papa.parse(csvUrl, {
-            download: true,
-            header: true,
-            complete: function(results) {
-                const data = results.data;
-                let validSignatureCount = 0;
+        // Helper function to safely fetch a CSV
+        function fetchCSV(url) {
+            return new Promise((resolve, reject) => {
+                Papa.parse(url, {
+                    download: true,
+                    header: true,
+                    complete: function(results) { resolve(results.data); },
+                    error: function(err) { reject(err); }
+                });
+            });
+        }
 
-                data.forEach(row => {
-                    // 1. Count Total Signatures (Multiplier kept at 2)
+        // Fetch BOTH CSVs at the exact same time
+        Promise.all([fetchCSV(approvedCommentsCsvUrl), fetchCSV(totalIdsCsvUrl)])
+            .then(([commentsData, idsData]) => {
+                
+                // 1. Process the Total IDs (and multiply by 2)
+                let validSignatureCount = 0;
+                idsData.forEach(row => {
                     if (Object.keys(row).length > 0 && Object.values(row).join('').trim() !== '') {
                         validSignatureCount++;
                     }
+                });
+                document.getElementById('signature-count').innerText = (validSignatureCount * 2).toLocaleString();
 
-                    // 2. Check if comment exists AND if the moderation column has a value
-                    let hasComment = row['Comments'] && row['Comments'].trim() !== '';
-                    let isApproved = row[moderationColumnName] && row[moderationColumnName].trim() !== '';
-
-                    if(hasComment && isApproved) {
+                // 2. Process the Approved Comments
+                commentsData.forEach(row => {
+                    if(row['Comments'] && row['Comments'].trim() !== '') {
                         commentsArray.push(row['Comments'].trim());
                     }
                 });
-
-                // Display the multiplied count
-                document.getElementById('signature-count').innerText = (validSignatureCount * 2).toLocaleString();
 
                 if(commentsArray.length > 0) {
                     showComment(0);
                     startTimer();
                 } else {
-                    document.getElementById('active-comment').innerHTML = "<span class='comment-text'>No approved comments yet.</span>";
+                    document.getElementById('active-comment').innerHTML = "<span class='comment-text'>No comments yet.</span>";
                 }
-            }
-        });
+            })
+            .catch(error => {
+                console.error("Error loading petition data:", error);
+                document.getElementById('active-comment').innerHTML = "<span class='comment-text'>Unable to load comments.</span>";
+                document.getElementById('signature-count').innerText = "0";
+            });
 
+
+        // --- Display and Carousel Logic ---
         function showComment(index) {
             if(commentsArray.length === 0) return;
             
