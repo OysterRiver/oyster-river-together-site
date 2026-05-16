@@ -291,7 +291,7 @@
 
         let commentsArray = [];
         let currentIndex = 0;
-        let carouselTimer;
+        let carouselTimer = null;
         let isPaused = false;
 
         Papa.parse(csvUrl, {
@@ -300,6 +300,7 @@
             complete: function(results) {
                 const data = results.data;
                 
+                // 1. Process Supporter Count
                 if(data.length > 0 && data[0]['Total Supporters']) {
                     let trueCount = parseInt(data[0]['Total Supporters'].replace(/,/g, ''), 10);
                     if(!isNaN(trueCount)) {
@@ -307,16 +308,18 @@
                     }
                 }
 
+                // 2. Build the Raw Array of Approved Comments
                 data.forEach(row => {
                     if(row['Comments'] && row['Comments'].trim() !== '') {
                         commentsArray.push(row['Comments'].trim());
                     }
                 });
 
+                // 3. Complete Data Shield Validation before initializing
                 if(commentsArray.length > 0) {
-                    // Shuffling first guarantees a truly random layout from row zero
-                    shuffleArray(commentsArray);
-                    showComment(0);
+                    shuffleArray(commentsArray); // Fully shuffle the entire deck *first*
+                    currentIndex = 0;
+                    displayCurrentComment();   // Render the random index zero element
                 } else {
                     document.getElementById('active-comment').innerHTML = "<span class='comment-text'>No comments yet.</span>";
                 }
@@ -327,6 +330,7 @@
             }
         });
 
+        // Strict Fisher-Yates shuffle implementation
         function shuffleArray(array) {
             for (let i = array.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
@@ -334,29 +338,58 @@
             }
         }
 
-        function showComment(index) {
+        // Handles rendering the index and scheduling the pacing safely
+        function displayCurrentComment() {
             if(commentsArray.length === 0) return;
             
-            if(index >= commentsArray.length) currentIndex = 0;
-            else if(index < 0) currentIndex = commentsArray.length - 1;
-            else currentIndex = index;
-
             let rawComment = commentsArray[currentIndex];
-            
             document.getElementById('active-comment').innerHTML = 
                 `<span class="comment-text" onclick="openModal()" title="Click to read full comment">"${rawComment}"</span>`;
             
-            // Re-trigger dynamic pacing calculation for the newly mounted text element
             startTimer();
         }
 
+        function navigateCarousel(step) {
+            if(commentsArray.length === 0) return;
+            
+            clearTimeout(carouselTimer);
+            currentIndex += step;
+
+            // Loop checking rules
+            if(currentIndex >= commentsArray.length) {
+                // Deck finished! Reshuffle completely so the sequence never mirrors the last run
+                shuffleArray(commentsArray);
+                currentIndex = 0;
+            } else if(currentIndex < 0) {
+                currentIndex = commentsArray.length - 1;
+            }
+
+            displayCurrentComment();
+        }
+
+        function startTimer() {
+            clearTimeout(carouselTimer);
+            if (isPaused || commentsArray.length === 0) return;
+
+            let currentCommentText = commentsArray[currentIndex];
+            let wordCount = currentCommentText.split(/\s+/).filter(Boolean).length;
+            
+            // Dynamic evaluation pacing math rules
+            let calculatedDelay = 3000 + (wordCount * 300);
+            let finalDelay = Math.max(4000, Math.min(calculatedDelay, 12000));
+
+            carouselTimer = setTimeout(() => {
+                navigateCarousel(1); // Advance to the next item sequentially
+            }, finalDelay); 
+        }
+
         function openModal() {
+            clearTimeout(carouselTimer);
             document.getElementById('modal-text').innerText = '"' + commentsArray[currentIndex] + '"';
             document.getElementById('comment-modal').style.display = 'flex';
             
             isPaused = true;
             document.getElementById('btn-pause').innerText = '▶';
-            clearTimeout(carouselTimer);
         }
 
         function closeModal() {
@@ -367,31 +400,9 @@
             startTimer();
         }
 
-        function startTimer() {
-            clearTimeout(carouselTimer);
-            if (isPaused || commentsArray.length === 0) return;
-
-            let currentCommentText = commentsArray[currentIndex];
-            let wordCount = currentCommentText.split(/\s+/).filter(Boolean).length;
-            
-            // Strategy: 3000ms fixed static layout comprehension window + 300ms per text token
-            let calculatedDelay = 3000 + (wordCount * 300);
-            
-            // Floor safety threshold: 4000ms. Ceiling maximum threshold: 12000ms.
-            let finalDelay = Math.max(4000, Math.min(calculatedDelay, 12000));
-
-            carouselTimer = setTimeout(() => {
-                showComment(currentIndex + 1);
-            }, finalDelay); 
-        }
-
-        document.getElementById('btn-next').addEventListener('click', () => {
-            showComment(currentIndex + 1);
-        });
-
-        document.getElementById('btn-prev').addEventListener('click', () => {
-            showComment(currentIndex - 1);
-        });
+        // Button Click Configuration Setup
+        document.getElementById('btn-next').addEventListener('click', () => navigateCarousel(1));
+        document.getElementById('btn-prev').addEventListener('click', () => navigateCarousel(-1));
 
         document.getElementById('btn-pause').addEventListener('click', (e) => {
             isPaused = !isPaused;
