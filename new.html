@@ -106,7 +106,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            min-width: 0; /* Prevents flex children from bursting the container boundaries */
+            min-width: 0;
         }
 
         .comment-text {
@@ -196,18 +196,18 @@
         /* --- MOBILE LAYOUT OVERRIDES --- */
         @media (max-width: 650px) {
             .wrapper {
-                height: calc(100% - 100px); 
+                height: calc(100% - 80px); /* Adjusted from 100px to 80px */
             }
             .carousel-bar {
-                height: 100px;
+                height: 80px; /* Adjusted from 100px to 80px */
                 flex-wrap: wrap; 
-                padding: 10px 15px;
+                padding: 8px 15px;
                 align-content: space-between;
             }
             .carousel-count {
                 order: 1; 
                 font-size: 12px;
-                padding: 4px 8px;
+                padding: 3px 6px;
             }
             .carousel-controls {
                 order: 2; 
@@ -218,8 +218,9 @@
                 padding: 0;
                 display: block;
                 text-align: center; 
-                font-size: 14px;
+                font-size: 13.5px;
                 box-sizing: border-box;
+                margin-bottom: 2px;
             }
             .comment-text {
                 white-space: normal; 
@@ -334,8 +335,6 @@
 
             let rawComment = commentsArray[currentIndex];
             
-            // Re-enforcing structural styles right during internal string injection 
-            // to completely avoid initial layout shifting bugs
             document.getElementById('active-comment').innerHTML = 
                 `<span class="comment-text" onclick="openModal()" title="Click to read full comment">"${rawComment}"</span>`;
         }
