@@ -169,6 +169,7 @@
             padding: 30px;
             border-radius: 8px;
             max-width: 85%;
+            width: 550px;
             max-height: 80vh;
             overflow-y: auto;
             box-shadow: 0 10px 25px rgba(0,0,0,0.2);
@@ -176,7 +177,13 @@
             font-size: 18px;
             line-height: 1.6;
             color: #1e293b;
+            box-sizing: border-box;
+        }
+
+        .modal-text-container {
             font-style: italic;
+            margin-bottom: 50px; /* Space for fixed bottom footer controls */
+            padding-top: 10px;
         }
 
         .modal-close {
@@ -187,10 +194,47 @@
             font-size: 24px;
             color: #94a3b8;
             transition: color 0.2s;
+            z-index: 2100;
         }
 
         .modal-close:hover {
+            color: #closeBtn;
             color: #e53e3e;
+        }
+
+        /* Fixed Footer inside Modal for Navigating Expanded Quotes */
+        .modal-footer-nav {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 50px;
+            border-top: 1px solid #f1f5f9;
+            background-color: #fafafa;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 40px;
+            border-bottom-left-radius: 8px;
+            border-bottom-right-radius: 8px;
+        }
+
+        .modal-nav-btn {
+            background: none;
+            border: none;
+            color: #64748b;
+            font-size: 16px;
+            cursor: pointer;
+            padding: 5px 15px;
+            border-radius: 4px;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+        }
+
+        .modal-nav-btn:hover {
+            color: #0f172a;
+            background-color: #e2e8f0;
         }
 
         /* --- MOBILE LAYOUT OVERRIDES --- */
@@ -231,6 +275,10 @@
                 overflow: hidden;
                 text-overflow: ellipsis; 
             }
+            .modal-content {
+                max-width: 90%;
+                font-size: 16px;
+            }
         }
     </style>
 </head>
@@ -259,7 +307,12 @@
     <div id="comment-modal" class="modal-overlay" onclick="closeModal()">
         <div class="modal-content" onclick="event.stopPropagation()">
             <span class="modal-close" onclick="closeModal()">&times;</span>
-            <div id="modal-text"></div>
+            <div id="modal-text" class="modal-text-container"></div>
+            
+            <div class="modal-footer-nav">
+                <button class="modal-nav-btn" id="modal-btn-prev" title="Previous Comment">◀ Back</button>
+                <button class="modal-nav-btn" id="modal-btn-next" title="Next Comment">Next ▶</button>
+            </div>
         </div>
     </div>
 
@@ -286,8 +339,6 @@
         
         const rawCsvUrl = atob(_0xdata.join(''));
         const formUrl = atob(_0xform.join(''));
-        
-        // Cache-busting parameter added to ensure the absolute latest row modifications pull through immediately
         const csvUrl = rawCsvUrl + "&t=" + new Date().getTime();
 
         document.getElementById('main-form').setAttribute('data-tally-src', formUrl);
@@ -297,7 +348,6 @@
         let carouselTimer = null;
         let isPaused = false;
 
-        // Fetching full file directly to maintain chronological data processing integrity
         fetch(csvUrl)
             .then(response => response.text())
             .then(csvText => {
@@ -314,15 +364,16 @@
                             }
                         }
 
-                        // 2. Build Comments Array sequentially (Chronological submission order)
+                        // 2. Build the array fully
                         data.forEach(row => {
                             if(row['Comments'] && row['Comments'].trim() !== '') {
                                 commentsArray.push(row['Comments'].trim());
                             }
                         });
 
-                        // 3. Mount item zero and start standard playback loop
+                        // 3. Shuffle array immediately so index 0 is randomized on load
                         if(commentsArray.length > 0) {
+                            shuffleArray(commentsArray); 
                             currentIndex = 0;
                             showComment(currentIndex);
                             startTimer();
@@ -337,23 +388,40 @@
                 document.getElementById('active-comment').innerHTML = "<span class='comment-text'>Unable to load comments.</span>";
             });
 
+        // Fisher-Yates array shuffling math logic
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[array[j]]] = [array[j], array[i]];
+            }
+        }
+
         function showComment(index) {
             if(commentsArray.length === 0) return;
             
-            if(index >= commentsArray.length) currentIndex = 0;
-            else if(index < 0) currentIndex = commentsArray.length - 1;
-            else currentIndex = index;
+            if(index >= commentsArray.length) {
+                shuffleArray(commentsArray); // End of deck reached: reshuffle automatically
+                currentIndex = 0;
+            } else if(index < 0) {
+                currentIndex = commentsArray.length - 1;
+            } else {
+                currentIndex = index;
+            }
 
             let rawComment = commentsArray[currentIndex];
             document.getElementById('active-comment').innerHTML = 
                 `<span class="comment-text" onclick="openModal()" title="Click to read full comment">"${rawComment}"</span>`;
+                
+            // If the modal is currently open, sync its text content with the current index
+            if(document.getElementById('comment-modal').style.display === 'flex') {
+                document.getElementById('modal-text').innerText = '"' + rawComment + '"';
+            }
         }
 
         function startTimer() {
             clearInterval(carouselTimer);
             if (isPaused || commentsArray.length === 0) return;
 
-            // Stable 7-second standard intervals
             carouselTimer = setInterval(() => {
                 showComment(currentIndex + 1);
             }, 7000); 
@@ -380,6 +448,7 @@
             startTimer();
         }
 
+        // Bottom Bar Control Button Handlers
         document.getElementById('btn-next').addEventListener('click', () => {
             showComment(currentIndex + 1);
             resetTimer(); 
@@ -388,6 +457,15 @@
         document.getElementById('btn-prev').addEventListener('click', () => {
             showComment(currentIndex - 1);
             resetTimer();
+        });
+
+        // Modal Specific Inline Nav Control Handlers
+        document.getElementById('modal-btn-next').addEventListener('click', () => {
+            showComment(currentIndex + 1);
+        });
+
+        document.getElementById('modal-btn-prev').addEventListener('click', () => {
+            showComment(currentIndex - 1);
         });
 
         document.getElementById('btn-pause').addEventListener('click', (e) => {
