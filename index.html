@@ -149,7 +149,7 @@
             background-color: #f1f5f9;
         }
 
-        /* --- MODAL SCROLL AND OVERLAY RULES --- */
+        /* --- MODAL FOR LONG COMMENTS --- */
         .modal-overlay {
             display: none; 
             position: fixed;
@@ -164,28 +164,15 @@
             backdrop-filter: blur(3px); 
         }
 
-        .modal-container {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            position: relative;
-            max-width: 85%;
-            width: 650px;
-        }
-
         .modal-content {
             background: #ffffff;
-            padding: 35px;
+            padding: 30px;
             border-radius: 8px;
-            width: 100%;
-            max-height: 75vh;
+            max-width: 85%;
+            max-height: 80vh;
             overflow-y: auto;
             box-shadow: 0 10px 25px rgba(0,0,0,0.2);
             position: relative;
-            box-sizing: border-box;
-        }
-
-        .modal-text-wrap {
             font-size: 18px;
             line-height: 1.6;
             color: #1e293b;
@@ -200,49 +187,10 @@
             font-size: 24px;
             color: #94a3b8;
             transition: color 0.2s;
-            z-index: 2100;
         }
 
         .modal-close:hover {
             color: #e53e3e;
-        }
-
-        .modal-side-btn {
-            position: absolute;
-            top: 50%;
-            transform: translateY(-50%);
-            background: #ffffff;
-            border: 1px solid #e2e8f0;
-            color: #475569;
-            width: 44px;
-            height: 44px;
-            border-radius: 50%;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 16px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-            transition: all 0.2s;
-            z-index: 2200;
-        }
-
-        .modal-side-btn:hover {
-            color: #0f172a;
-            background-color: #f8fafc;
-            border-color: #cbd5e1;
-        }
-
-        .modal-side-btn.left {
-            left: -60px;
-        }
-
-        .modal-side-btn.right {
-            right: -60px;
-        }
-
-        .modal-mobile-controls {
-            display: none;
         }
 
         /* --- MOBILE LAYOUT OVERRIDES --- */
@@ -267,14 +215,12 @@
             .carousel-content {
                 order: 3; 
                 width: 100%;
-                height: 40px; 
                 padding: 0;
-                display: flex;
-                align-items: center;
-                justify-content: center;
+                display: block;
                 text-align: center; 
                 font-size: 13.5px;
                 box-sizing: border-box;
+                margin-bottom: 2px;
             }
             .comment-text {
                 white-space: normal; 
@@ -284,60 +230,6 @@
                 -webkit-box-orient: vertical;
                 overflow: hidden;
                 text-overflow: ellipsis; 
-            }
-            
-            /* --- STRUCTURALLY LOCKED MOBILE MODAL LAYOUT --- */
-            .modal-container {
-                max-width: 90%;
-            }
-            .modal-content {
-                height: 50vh; /* FORCES STRUCTURAL RIGIDITY. THE CONTENT HEIGHT NEVER SHIFTS. */
-                padding: 25px 20px 60px 20px; 
-                overflow-y: auto; /* Internal text block handles scrolling inside the locked container */
-                font-size: 15px;
-            }
-            .modal-text-wrap {
-                font-size: 16px;
-                display: block;
-                padding-bottom: 10px;
-            }
-            
-            .modal-side-btn {
-                display: none !important;
-            }
-            
-            /* Pinned Split Grid Footer (Never moves, buttons stay perfectly targeted) */
-            .modal-mobile-controls {
-                display: flex;
-                position: absolute;
-                bottom: 0;
-                left: 0;
-                width: 100%;
-                height: 50px;
-                background-color: #f8fafc;
-                border-top: 1px solid #e2e8f0;
-                border-bottom-left-radius: 8px;
-                border-bottom-right-radius: 8px;
-                box-sizing: border-box;
-                z-index: 2300;
-            }
-            .mobile-nav-btn {
-                flex: 1;
-                background: none;
-                border: none;
-                color: #475569;
-                font-size: 14px;
-                font-weight: 500;
-                cursor: pointer;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-            }
-            .mobile-nav-btn:active {
-                background-color: #f1f5f9;
-            }
-            .mobile-nav-btn.left-border {
-                border-left: 1px solid #e2e8f0;
             }
         }
     </style>
@@ -365,22 +257,9 @@
     </div>
 
     <div id="comment-modal" class="modal-overlay" onclick="closeModal()">
-        <div class="modal-container" onclick="event.stopPropagation()">
-            
-            <button class="modal-side-btn left" id="modal-btn-prev" title="Previous Comment">◀</button>
-            
-            <div class="modal-content">
-                <span class="modal-close" onclick="closeModal()">&times;</span>
-                <div id="modal-text" class="modal-text-wrap"></div>
-                
-                <div class="modal-mobile-controls">
-                    <button class="mobile-nav-btn" id="mobile-btn-prev">◀ Previous</button>
-                    <button class="mobile-nav-btn left-border" id="mobile-btn-next">Next ▶</button>
-                </div>
-            </div>
-            
-            <button class="modal-side-btn right" id="modal-btn-next" title="Next Comment">▶</button>
-            
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <span class="modal-close" onclick="closeModal()">&times;</span>
+            <div id="modal-text"></div>
         </div>
     </div>
 
@@ -407,6 +286,8 @@
         
         const rawCsvUrl = atob(_0xdata.join(''));
         const formUrl = atob(_0xform.join(''));
+        
+        // Cache-busting parameter added to ensure the absolute latest row modifications pull through immediately
         const csvUrl = rawCsvUrl + "&t=" + new Date().getTime();
 
         document.getElementById('main-form').setAttribute('data-tally-src', formUrl);
@@ -416,83 +297,63 @@
         let carouselTimer = null;
         let isPaused = false;
 
+        // Fetching full file directly to maintain chronological data processing integrity
         fetch(csvUrl)
             .then(response => response.text())
             .then(csvText => {
-                // BYPASS ALL COLUMN HEADER INTERPRETATION LOGIC (Instantly parses raw multi-dimensional string lines)
-                let parsed = Papa.parse(csvText, {
-                    header: false,
-                    skipEmptyLines: true
+                Papa.parse(csvText, {
+                    header: true,
+                    complete: function(results) {
+                        const data = results.data;
+                        
+                        // 1. Process Supporter Count
+                        if(data.length > 0 && data[0]['Total Supporters']) {
+                            let trueCount = parseInt(data[0]['Total Supporters'].replace(/,/g, ''), 10);
+                            if(!isNaN(trueCount)) {
+                                document.getElementById('supporter-count').innerText = trueCount.toLocaleString();
+                            }
+                        }
+
+                        // 2. Build Comments Array sequentially (Chronological submission order)
+                        data.forEach(row => {
+                            if(row['Comments'] && row['Comments'].trim() !== '') {
+                                commentsArray.push(row['Comments'].trim());
+                            }
+                        });
+
+                        // 3. Mount item zero and start standard playback loop
+                        if(commentsArray.length > 0) {
+                            currentIndex = 0;
+                            showComment(currentIndex);
+                            startTimer();
+                        } else {
+                            document.getElementById('active-comment').innerHTML = "<span class='comment-text'>No comments yet.</span>";
+                        }
+                    }
                 });
-
-                const rows = parsed.data;
-                
-                // 1. Row 1 (Index 1 in zero-index) contains column headers. Row 2 (Index 1) has actual row data cells.
-                // Row 2, Column B (Index 1) contains your numeric total summary value.
-                if(rows.length > 1 && rows[1][1]) {
-                    let trueCount = parseInt(rows[1][1].replace(/,/g, ''), 10);
-                    if(!isNaN(trueCount)) {
-                        document.getElementById('supporter-count').innerText = trueCount.toLocaleString();
-                    }
-                }
-
-                // 2. Extract comments cleanly. Row 1 has headers, so we slice and scan from Row 2 down.
-                // Column A (Index 0) holds all your text comments.
-                for (let i = 1; i < rows.length; i++) {
-                    let textCell = rows[i][0];
-                    if(textCell && textCell.trim() !== '' && textCell !== 'Comments') {
-                        commentsArray.push(textCell.trim());
-                    }
-                }
-
-                // 3. Immediately shuffle and present the dataset with zero background engine noise
-                if(commentsArray.length > 0) {
-                    shuffleArray(commentsArray); 
-                    currentIndex = 0;
-                    showComment(currentIndex);
-                    startTimer();
-                } else {
-                    document.getElementById('active-comment').innerHTML = "<span class='comment-text'>No comments yet.</span>";
-                }
             })
             .catch(error => {
-                console.error("Critical array execution block failure:", error);
+                console.error("Error loading file:", error);
                 document.getElementById('active-comment').innerHTML = "<span class='comment-text'>Unable to load comments.</span>";
             });
-
-        function shuffleArray(array) {
-            for (let i = array.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [array[i], array[array[j]]] = [array[j], array[i]];
-            }
-        }
 
         function showComment(index) {
             if(commentsArray.length === 0) return;
             
-            if(index >= commentsArray.length) {
-                shuffleArray(commentsArray); 
-                currentIndex = 0;
-            } else if(index < 0) {
-                currentIndex = commentsArray.length - 1;
-            } else {
-                currentIndex = index;
-            }
+            if(index >= commentsArray.length) currentIndex = 0;
+            else if(index < 0) currentIndex = commentsArray.length - 1;
+            else currentIndex = index;
 
             let rawComment = commentsArray[currentIndex];
             document.getElementById('active-comment').innerHTML = 
                 `<span class="comment-text" onclick="openModal()" title="Click to read full comment">"${rawComment}"</span>`;
-                
-            if(document.getElementById('comment-modal').style.display === 'flex') {
-                document.getElementById('modal-text').innerText = '"' + rawComment + '"';
-                document.getElementById('.modal-content').scrollTop = 0; // Snap overflow views back to top row on next click
-            }
         }
 
         function startTimer() {
             clearInterval(carouselTimer);
             if (isPaused || commentsArray.length === 0) return;
 
+            // Stable 7-second standard intervals
             carouselTimer = setInterval(() => {
                 showComment(currentIndex + 1);
             }, 7000); 
@@ -527,22 +388,6 @@
         document.getElementById('btn-prev').addEventListener('click', () => {
             showComment(currentIndex - 1);
             resetTimer();
-        });
-
-        document.getElementById('modal-btn-next').addEventListener('click', () => {
-            showComment(currentIndex + 1);
-        });
-
-        document.getElementById('modal-btn-prev').addEventListener('click', () => {
-            showComment(currentIndex - 1);
-        });
-
-        document.getElementById('mobile-btn-next').addEventListener('click', () => {
-            showComment(currentIndex + 1);
-        });
-
-        document.getElementById('mobile-btn-prev').addEventListener('click', () => {
-            showComment(currentIndex - 1);
         });
 
         document.getElementById('btn-pause').addEventListener('click', (e) => {
