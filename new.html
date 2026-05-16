@@ -284,8 +284,12 @@
             "RzRm9yd2FyZGluZz0x"
         ];
         
-        const csvUrl = atob(_0xdata.join(''));
+        // Base decryption
+        const rawCsvUrl = atob(_0xdata.join(''));
         const formUrl = atob(_0xform.join(''));
+
+        // Cache-Busting implementation: Append dynamic timestamp to force completely unique server calls
+        const csvUrl = rawCsvUrl + "&t=" + new Date().getTime();
 
         document.getElementById('main-form').setAttribute('data-tally-src', formUrl);
 
@@ -315,11 +319,11 @@
                     }
                 });
 
-                // 3. Complete Data Shield Validation before initializing
+                // 3. Initialize after array structural safety check
                 if(commentsArray.length > 0) {
-                    shuffleArray(commentsArray); // Fully shuffle the entire deck *first*
+                    shuffleArray(commentsArray); 
                     currentIndex = 0;
-                    displayCurrentComment();   // Render the random index zero element
+                    displayCurrentComment();   
                 } else {
                     document.getElementById('active-comment').innerHTML = "<span class='comment-text'>No comments yet.</span>";
                 }
@@ -330,7 +334,6 @@
             }
         });
 
-        // Strict Fisher-Yates shuffle implementation
         function shuffleArray(array) {
             for (let i = array.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
@@ -338,7 +341,6 @@
             }
         }
 
-        // Handles rendering the index and scheduling the pacing safely
         function displayCurrentComment() {
             if(commentsArray.length === 0) return;
             
@@ -355,9 +357,7 @@
             clearTimeout(carouselTimer);
             currentIndex += step;
 
-            // Loop checking rules
             if(currentIndex >= commentsArray.length) {
-                // Deck finished! Reshuffle completely so the sequence never mirrors the last run
                 shuffleArray(commentsArray);
                 currentIndex = 0;
             } else if(currentIndex < 0) {
@@ -374,12 +374,11 @@
             let currentCommentText = commentsArray[currentIndex];
             let wordCount = currentCommentText.split(/\s+/).filter(Boolean).length;
             
-            // Dynamic evaluation pacing math rules
             let calculatedDelay = 3000 + (wordCount * 300);
             let finalDelay = Math.max(4000, Math.min(calculatedDelay, 12000));
 
             carouselTimer = setTimeout(() => {
-                navigateCarousel(1); // Advance to the next item sequentially
+                navigateCarousel(1); 
             }, finalDelay); 
         }
 
@@ -400,7 +399,6 @@
             startTimer();
         }
 
-        // Button Click Configuration Setup
         document.getElementById('btn-next').addEventListener('click', () => navigateCarousel(1));
         document.getElementById('btn-prev').addEventListener('click', () => navigateCarousel(-1));
 
