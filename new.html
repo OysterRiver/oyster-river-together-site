@@ -49,6 +49,7 @@
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
         }
 
+        /* --- DESKTOP LAYOUT --- */
         .wrapper {
             position: absolute;
             top: 0; 
@@ -139,6 +140,7 @@
             background-color: #f1f5f9;
         }
 
+        /* --- MODAL FOR LONG COMMENTS --- */
         .modal-overlay {
             display: none; 
             position: fixed;
@@ -181,6 +183,38 @@
         .modal-close:hover {
             color: #e53e3e;
         }
+
+        /* --- MOBILE LAYOUT OVERRIDES --- */
+        @media (max-width: 650px) {
+            .wrapper {
+                height: calc(100% - 100px); /* Makes room for the taller mobile bar */
+            }
+            .carousel-bar {
+                height: 100px;
+                flex-wrap: wrap; /* Allows the elements to stack onto multiple rows */
+                padding: 10px 15px;
+                align-content: space-between;
+            }
+            .carousel-count {
+                order: 1; /* Forces count to top left */
+                font-size: 12px;
+                padding: 4px 8px;
+            }
+            .carousel-controls {
+                order: 2; /* Forces controls to top right */
+            }
+            .carousel-content {
+                order: 3; /* Forces comment to the bottom row */
+                width: 100%;
+                padding: 0;
+                white-space: normal; /* Removes the single-line restriction */
+                display: -webkit-box;
+                -webkit-line-clamp: 2; /* Allows it to wrap to 2 lines cleanly */
+                -webkit-box-orient: vertical;
+                text-align: left; /* Left align reads better when stacked */
+                font-size: 14px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -191,7 +225,7 @@
 
     <div class="carousel-bar">
         <div class="carousel-count">
-            <span id="signature-count"></span>&nbsp;Supporters
+            <span id="signature-count">...</span>&nbsp;Supporters
         </div>
         
         <div class="carousel-content" id="active-comment">
@@ -215,7 +249,7 @@
     <script async src="https://tally.so/widgets/embed.js"></script>
 
     <script>
-        // *** PASTE YOUR SINGLE, OPTIMIZED CSV LINK HERE ***
+        // Your specific single-tab CSV Link
         const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTif9kpFENTSs10nUids_7CKozvj__dv8flbzr2hr7kTVdik0iHl3qOUS3HWxwhWNs73HevA1iq450Z/pub?gid=601182203&single=true&output=csv";
 
         let commentsArray = [];
@@ -229,18 +263,15 @@
             complete: function(results) {
                 const data = results.data;
                 
-                // 1. Grab the Total Signatures from the first row
-                // (Assumes your column header is exactly "Total Signatures")
+                // 1. Grab the Total Signatures from the first row (Multiplier Removed)
                 if(data.length > 0 && data[0]['Total Signatures']) {
                     let trueCount = parseInt(data[0]['Total Signatures'].replace(/,/g, ''), 10);
                     if(!isNaN(trueCount)) {
-                        // Multiplier removed here
                         document.getElementById('signature-count').innerText = trueCount.toLocaleString();
                     }
                 }
 
                 // 2. Loop through all rows to extract the approved comments
-                // (Assumes your column header is exactly "Comments")
                 data.forEach(row => {
                     if(row['Comments'] && row['Comments'].trim() !== '') {
                         commentsArray.push(row['Comments'].trim());
