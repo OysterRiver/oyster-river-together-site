@@ -229,12 +229,13 @@
             complete: function(results) {
                 const data = results.data;
                 
-                // 1. Grab the Total Signatures from the first row and multiply by 2
+                // 1. Grab the Total Signatures from the first row
                 // (Assumes your column header is exactly "Total Signatures")
                 if(data.length > 0 && data[0]['Total Signatures']) {
                     let trueCount = parseInt(data[0]['Total Signatures'].replace(/,/g, ''), 10);
                     if(!isNaN(trueCount)) {
-                        document.getElementById('signature-count').innerText = (trueCount * 2).toLocaleString();
+                        // Multiplier removed here
+                        document.getElementById('signature-count').innerText = trueCount.toLocaleString();
                     }
                 }
 
