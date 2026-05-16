@@ -149,7 +149,7 @@
             background-color: #f1f5f9;
         }
 
-        /* --- MODAL STRUCTURE WITH FIXED POSITION SIDE NAVS --- */
+        /* --- MODAL MASTER CONTAINER --- */
         .modal-overlay {
             display: none; 
             position: fixed;
@@ -182,11 +182,14 @@
             overflow-y: auto;
             box-shadow: 0 10px 25px rgba(0,0,0,0.2);
             position: relative;
+            box-sizing: border-box;
+        }
+
+        .modal-text-wrap {
             font-size: 18px;
             line-height: 1.6;
             color: #1e293b;
             font-style: italic;
-            box-sizing: border-box;
         }
 
         .modal-close {
@@ -204,7 +207,7 @@
             color: #e53e3e;
         }
 
-        /* Pinned Edge Navigation Elements */
+        /* Desktop Fixed Navigation Buttons (Float safely outside content box) */
         .modal-side-btn {
             position: absolute;
             top: 50%;
@@ -239,6 +242,11 @@
             right: -60px;
         }
 
+        /* Container designed to hold bottom layout elements only on mobile viewports */
+        .modal-mobile-controls {
+            display: none;
+        }
+
         /* --- MOBILE LAYOUT OVERRIDES --- */
         @media (max-width: 650px) {
             .wrapper {
@@ -261,7 +269,7 @@
             .carousel-content {
                 order: 3; 
                 width: 100%;
-                height: 40px; /* Force strict containment height bounds */
+                height: 40px; 
                 padding: 0;
                 display: flex;
                 align-items: center;
@@ -280,26 +288,56 @@
                 text-overflow: ellipsis; 
             }
             
-            /* Squeeze Side Navs Inward on Narrow Phone viewports */
+            /* --- RE-ARCHITECTED MOBILE MODAL --- */
             .modal-container {
-                max-width: 95%;
+                max-width: 90%;
             }
             .modal-content {
-                padding: 25px 20px;
+                padding: 25px 20px 70px 20px; /* Generous bottom padding protects text bounds */
                 font-size: 15px;
                 max-height: 65vh;
             }
+            .modal-text-wrap {
+                font-size: 16px;
+            }
+            
+            /* Hide the desktop floaters entirely on mobile layout */
             .modal-side-btn {
-                background: rgba(255, 255, 255, 0.95);
-                width: 38px;
-                height: 38px;
-                box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+                display: none !important;
             }
-            .modal-side-btn.left {
-                left: 6px;
+            
+            /* Build static, clean bottom row buttons into the modal card footer */
+            .modal-mobile-controls {
+                display: flex;
+                position: absolute;
+                bottom: 0;
+                left: 0;
+                width: 100%;
+                height: 50px;
+                background-color: #f8fafc;
+                border-top: 1px solid #e2e8f0;
+                border-bottom-left-radius: 8px;
+                border-bottom-right-radius: 8px;
+                box-sizing: border-box;
             }
-            .modal-side-btn.right {
-                right: 6px;
+            .mobile-nav-btn {
+                flex: 1;
+                background: none;
+                border: none;
+                color: #475569;
+                font-size: 14px;
+                font-weight: 500;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                transition: background-color 0.1s;
+            }
+            .mobile-nav-btn:active {
+                background-color: #f1f5f9;
+            }
+            .mobile-nav-btn.left-border {
+                border-left: 1px solid #e2e8f0;
             }
         }
     </style>
@@ -328,14 +366,21 @@
 
     <div id="comment-modal" class="modal-overlay" onclick="closeModal()">
         <div class="modal-container" onclick="event.stopPropagation()">
+            
             <button class="modal-side-btn left" id="modal-btn-prev" title="Previous Comment">◀</button>
             
             <div class="modal-content">
                 <span class="modal-close" onclick="closeModal()">&times;</span>
-                <div id="modal-text"></div>
+                <div id="modal-text" class="modal-text-wrap"></div>
+                
+                <div class="modal-mobile-controls">
+                    <button class="mobile-nav-btn" id="mobile-btn-prev">◀ Previous</button>
+                    <button class="mobile-nav-btn left-border" id="mobile-btn-next">Next ▶</button>
+                </div>
             </div>
             
             <button class="modal-side-btn right" id="modal-btn-next" title="Next Comment">▶</button>
+            
         </div>
     </div>
 
@@ -374,35 +419,35 @@
         fetch(csvUrl)
             .then(response => response.text())
             .then(csvText => {
-                Papa.parse(csvText, {
+                let parsed = Papa.parse(csvText, {
                     header: true,
-                    complete: function(results) {
-                        const data = results.data;
-                        
-                        if(data.length > 0 && data[0]['Total Supporters']) {
-                            let trueCount = parseInt(data[0]['Total Supporters'].replace(/,/g, ''), 10);
-                            if(!isNaN(trueCount)) {
-                                document.getElementById('supporter-count').innerText = trueCount.toLocaleString();
-                            }
-                        }
+                    skipEmptyLines: true,
+                    fastMode: false 
+                });
 
-                        data.forEach(row => {
-                            if(row['Comments'] && row['Comments'].trim() !== '') {
-                                commentsArray.push(row['Comments'].trim());
-                            }
-                        });
+                const data = parsed.data;
+                
+                if(data.length > 0 && data[0]['Total Supporters']) {
+                    let trueCount = parseInt(data[0]['Total Supporters'].replace(/,/g, ''), 10);
+                    if(!isNaN(trueCount)) {
+                        document.getElementById('supporter-count').innerText = trueCount.toLocaleString();
+                    }
+                }
 
-                        // Shuffle processing executed fully *before* index selection logic
-                        if(commentsArray.length > 0) {
-                            shuffleArray(commentsArray); 
-                            currentIndex = 0;
-                            showComment(currentIndex);
-                            startTimer();
-                        } else {
-                            document.getElementById('active-comment').innerHTML = "<span class='comment-text'>No comments yet.</span>";
-                        }
+                data.forEach(row => {
+                    if(row['Comments'] && row['Comments'].trim() !== '') {
+                        commentsArray.push(row['Comments'].trim());
                     }
                 });
+
+                if(commentsArray.length > 0) {
+                    shuffleArray(commentsArray); 
+                    currentIndex = 0;
+                    showComment(currentIndex);
+                    startTimer();
+                } else {
+                    document.getElementById('active-comment').innerHTML = "<span class='comment-text'>No comments yet.</span>";
+                }
             })
             .catch(error => {
                 console.error("Error loading file:", error);
@@ -467,6 +512,7 @@
             startTimer();
         }
 
+        // Bottom Bar Control Listeners
         document.getElementById('btn-next').addEventListener('click', () => {
             showComment(currentIndex + 1);
             resetTimer(); 
@@ -477,11 +523,21 @@
             resetTimer();
         });
 
+        // Desktop Modal Side Floater Control Listeners
         document.getElementById('modal-btn-next').addEventListener('click', () => {
             showComment(currentIndex + 1);
         });
 
         document.getElementById('modal-btn-prev').addEventListener('click', () => {
+            showComment(currentIndex - 1);
+        });
+
+        // Mobile Split Tab-bar Footer Control Listeners
+        document.getElementById('mobile-btn-next').addEventListener('click', () => {
+            showComment(currentIndex + 1);
+        });
+
+        document.getElementById('mobile-btn-prev').addEventListener('click', () => {
             showComment(currentIndex - 1);
         });
 
