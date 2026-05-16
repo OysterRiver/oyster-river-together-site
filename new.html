@@ -218,12 +218,12 @@
                 display: -webkit-box;
                 -webkit-line-clamp: 2; 
                 -webkit-box-orient: vertical;
-                text-align: center; /* Centered comment display on mobile */
+                text-align: center; 
                 justify-content: center;
                 font-size: 14px;
             }
             .comment-text {
-                white-space: normal; /* Permits clean 2-line wrapping instead of clip bugs */
+                white-space: normal; 
                 text-align: center;
                 width: 100%;
             }
@@ -233,7 +233,7 @@
 <body>
     
     <div class="wrapper">
-        <iframe data-tally-src="https://tally.so/r/PdvjOb?transparentBackground=1&formEventsForwarding=1" width="100%" frameborder="0" marginheight="0" marginwidth="0" title="Vote of No Confidence in Superintendent Dr. Robert Shaps"></iframe>
+        <iframe id="main-form" width="100%" frameborder="0" marginheight="0" marginwidth="0" title="Vote of No Confidence in Superintendent Dr. Robert Shaps"></iframe>
     </div>
 
     <div class="carousel-bar">
@@ -262,6 +262,7 @@
     <script async src="https://tally.so/widgets/embed.js"></script>
 
     <script>
+        // Data arrays are Base64 encoded to obscure raw source URLs
         const _0xdata = [
             "aHR0cHM6Ly9kb2NzLmdvb2dsZS5",
             "jb20vc3ByZWFkc2hlZXRzL2QvZS",
@@ -273,7 +274,18 @@
             "jIwMyZzaW5nbGU9dHJ1ZSZvdXRw",
             "dXQ9Y3N2"
         ];
+        const _0xform = [
+            "aHR0cHM6Ly90YWxseS5zby9yL1",
+            "BkdmpPYj90cmFuc3BhcmVudEJh",
+            "Y2tncm91bmQ9MSZmb3JtRXZlbn",
+            "RzRm9yd2FyZGluZz0x"
+        ];
+        
         const csvUrl = atob(_0xdata.join(''));
+        const formUrl = atob(_0xform.join(''));
+
+        // Safely inject the decoded Tally URL into the iframe right away
+        document.getElementById('main-form').setAttribute('data-tally-src', formUrl);
 
         let commentsArray = [];
         let currentIndex = 0;
