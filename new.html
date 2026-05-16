@@ -314,11 +314,9 @@
                 });
 
                 if(commentsArray.length > 0) {
-                    // Randomize array order using Fisher-Yates algorithm
+                    // Shuffling first guarantees a truly random layout from row zero
                     shuffleArray(commentsArray);
-                    
                     showComment(0);
-                    startTimer();
                 } else {
                     document.getElementById('active-comment').innerHTML = "<span class='comment-text'>No comments yet.</span>";
                 }
@@ -329,7 +327,6 @@
             }
         });
 
-        // Fisher-Yates Shuffle Engine
         function shuffleArray(array) {
             for (let i = array.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
@@ -337,7 +334,6 @@
             }
         }
 
-        // --- Display and Carousel Logic ---
         function showComment(index) {
             if(commentsArray.length === 0) return;
             
@@ -349,6 +345,9 @@
             
             document.getElementById('active-comment').innerHTML = 
                 `<span class="comment-text" onclick="openModal()" title="Click to read full comment">"${rawComment}"</span>`;
+            
+            // Re-trigger dynamic pacing calculation for the newly mounted text element
+            startTimer();
         }
 
         function openModal() {
@@ -357,6 +356,7 @@
             
             isPaused = true;
             document.getElementById('btn-pause').innerText = '▶';
+            clearTimeout(carouselTimer);
         }
 
         function closeModal() {
@@ -364,33 +364,44 @@
             
             isPaused = false;
             document.getElementById('btn-pause').innerText = '⏸';
+            startTimer();
         }
 
         function startTimer() {
-            carouselTimer = setInterval(() => {
-                if(!isPaused) showComment(currentIndex + 1);
-            }, 7000); 
-        }
+            clearTimeout(carouselTimer);
+            if (isPaused || commentsArray.length === 0) return;
 
-        function resetTimer() {
-            clearInterval(carouselTimer);
-            startTimer();
+            let currentCommentText = commentsArray[currentIndex];
+            let wordCount = currentCommentText.split(/\s+/).filter(Boolean).length;
+            
+            // Strategy: 3000ms fixed static layout comprehension window + 300ms per text token
+            let calculatedDelay = 3000 + (wordCount * 300);
+            
+            // Floor safety threshold: 4000ms. Ceiling maximum threshold: 12000ms.
+            let finalDelay = Math.max(4000, Math.min(calculatedDelay, 12000));
+
+            carouselTimer = setTimeout(() => {
+                showComment(currentIndex + 1);
+            }, finalDelay); 
         }
 
         document.getElementById('btn-next').addEventListener('click', () => {
             showComment(currentIndex + 1);
-            resetTimer(); 
         });
 
         document.getElementById('btn-prev').addEventListener('click', () => {
             showComment(currentIndex - 1);
-            resetTimer();
         });
 
         document.getElementById('btn-pause').addEventListener('click', (e) => {
             isPaused = !isPaused;
             e.target.innerText = isPaused ? '▶' : '⏸';
             e.target.title = isPaused ? 'Play' : 'Pause';
+            if (isPaused) {
+                clearTimeout(carouselTimer);
+            } else {
+                startTimer();
+            }
         });
     </script>
 
