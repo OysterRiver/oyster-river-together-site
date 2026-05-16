@@ -149,7 +149,7 @@
             background-color: #f1f5f9;
         }
 
-        /* --- MODAL MASTER CONTAINER --- */
+        /* --- MODAL SCROLL AND OVERLAY RULES --- */
         .modal-overlay {
             display: none; 
             position: fixed;
@@ -207,7 +207,6 @@
             color: #e53e3e;
         }
 
-        /* Desktop Fixed Navigation Buttons (Float safely outside content box) */
         .modal-side-btn {
             position: absolute;
             top: 50%;
@@ -242,7 +241,6 @@
             right: -60px;
         }
 
-        /* Container designed to hold bottom layout elements only on mobile viewports */
         .modal-mobile-controls {
             display: none;
         }
@@ -288,25 +286,27 @@
                 text-overflow: ellipsis; 
             }
             
-            /* --- RE-ARCHITECTED MOBILE MODAL --- */
+            /* --- STRUCTURALLY LOCKED MOBILE MODAL LAYOUT --- */
             .modal-container {
                 max-width: 90%;
             }
             .modal-content {
-                padding: 25px 20px 70px 20px; /* Generous bottom padding protects text bounds */
+                height: 50vh; /* FORCES STRUCTURAL RIGIDITY. THE CONTENT HEIGHT NEVER SHIFTS. */
+                padding: 25px 20px 60px 20px; 
+                overflow-y: auto; /* Internal text block handles scrolling inside the locked container */
                 font-size: 15px;
-                max-height: 65vh;
             }
             .modal-text-wrap {
                 font-size: 16px;
+                display: block;
+                padding-bottom: 10px;
             }
             
-            /* Hide the desktop floaters entirely on mobile layout */
             .modal-side-btn {
                 display: none !important;
             }
             
-            /* Build static, clean bottom row buttons into the modal card footer */
+            /* Pinned Split Grid Footer (Never moves, buttons stay perfectly targeted) */
             .modal-mobile-controls {
                 display: flex;
                 position: absolute;
@@ -319,6 +319,7 @@
                 border-bottom-left-radius: 8px;
                 border-bottom-right-radius: 8px;
                 box-sizing: border-box;
+                z-index: 2300;
             }
             .mobile-nav-btn {
                 flex: 1;
@@ -331,7 +332,6 @@
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                transition: background-color 0.1s;
             }
             .mobile-nav-btn:active {
                 background-color: #f1f5f9;
@@ -419,27 +419,33 @@
         fetch(csvUrl)
             .then(response => response.text())
             .then(csvText => {
+                // BYPASS ALL COLUMN HEADER INTERPRETATION LOGIC (Instantly parses raw multi-dimensional string lines)
                 let parsed = Papa.parse(csvText, {
-                    header: true,
-                    skipEmptyLines: true,
-                    fastMode: false 
+                    header: false,
+                    skipEmptyLines: true
                 });
 
-                const data = parsed.data;
+                const rows = parsed.data;
                 
-                if(data.length > 0 && data[0]['Total Supporters']) {
-                    let trueCount = parseInt(data[0]['Total Supporters'].replace(/,/g, ''), 10);
+                // 1. Row 1 (Index 1 in zero-index) contains column headers. Row 2 (Index 1) has actual row data cells.
+                // Row 2, Column B (Index 1) contains your numeric total summary value.
+                if(rows.length > 1 && rows[1][1]) {
+                    let trueCount = parseInt(rows[1][1].replace(/,/g, ''), 10);
                     if(!isNaN(trueCount)) {
                         document.getElementById('supporter-count').innerText = trueCount.toLocaleString();
                     }
                 }
 
-                data.forEach(row => {
-                    if(row['Comments'] && row['Comments'].trim() !== '') {
-                        commentsArray.push(row['Comments'].trim());
+                // 2. Extract comments cleanly. Row 1 has headers, so we slice and scan from Row 2 down.
+                // Column A (Index 0) holds all your text comments.
+                for (let i = 1; i < rows.length; i++) {
+                    let textCell = rows[i][0];
+                    if(textCell && textCell.trim() !== '' && textCell !== 'Comments') {
+                        commentsArray.push(textCell.trim());
                     }
-                });
+                }
 
+                // 3. Immediately shuffle and present the dataset with zero background engine noise
                 if(commentsArray.length > 0) {
                     shuffleArray(commentsArray); 
                     currentIndex = 0;
@@ -450,7 +456,7 @@
                 }
             })
             .catch(error => {
-                console.error("Error loading file:", error);
+                console.error("Critical array execution block failure:", error);
                 document.getElementById('active-comment').innerHTML = "<span class='comment-text'>Unable to load comments.</span>";
             });
 
@@ -479,6 +485,7 @@
                 
             if(document.getElementById('comment-modal').style.display === 'flex') {
                 document.getElementById('modal-text').innerText = '"' + rawComment + '"';
+                document.getElementById('.modal-content').scrollTop = 0; // Snap overflow views back to top row on next click
             }
         }
 
@@ -512,7 +519,6 @@
             startTimer();
         }
 
-        // Bottom Bar Control Listeners
         document.getElementById('btn-next').addEventListener('click', () => {
             showComment(currentIndex + 1);
             resetTimer(); 
@@ -523,7 +529,6 @@
             resetTimer();
         });
 
-        // Desktop Modal Side Floater Control Listeners
         document.getElementById('modal-btn-next').addEventListener('click', () => {
             showComment(currentIndex + 1);
         });
@@ -532,7 +537,6 @@
             showComment(currentIndex - 1);
         });
 
-        // Mobile Split Tab-bar Footer Control Listeners
         document.getElementById('mobile-btn-next').addEventListener('click', () => {
             showComment(currentIndex + 1);
         });
