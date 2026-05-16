@@ -187,31 +187,31 @@
         /* --- MOBILE LAYOUT OVERRIDES --- */
         @media (max-width: 650px) {
             .wrapper {
-                height: calc(100% - 100px); /* Makes room for the taller mobile bar */
+                height: calc(100% - 100px); 
             }
             .carousel-bar {
                 height: 100px;
-                flex-wrap: wrap; /* Allows the elements to stack onto multiple rows */
+                flex-wrap: wrap; 
                 padding: 10px 15px;
                 align-content: space-between;
             }
             .carousel-count {
-                order: 1; /* Forces count to top left */
+                order: 1; 
                 font-size: 12px;
                 padding: 4px 8px;
             }
             .carousel-controls {
-                order: 2; /* Forces controls to top right */
+                order: 2; 
             }
             .carousel-content {
-                order: 3; /* Forces comment to the bottom row */
+                order: 3; 
                 width: 100%;
                 padding: 0;
-                white-space: normal; /* Removes the single-line restriction */
+                white-space: normal; 
                 display: -webkit-box;
-                -webkit-line-clamp: 2; /* Allows it to wrap to 2 lines cleanly */
+                -webkit-line-clamp: 2; 
                 -webkit-box-orient: vertical;
-                text-align: left; /* Left align reads better when stacked */
+                text-align: left; 
                 font-size: 14px;
             }
         }
@@ -225,7 +225,7 @@
 
     <div class="carousel-bar">
         <div class="carousel-count">
-            <span id="signature-count">...</span>&nbsp;Supporters
+            <span id="supporter-count">...</span>&nbsp;Supporters
         </div>
         
         <div class="carousel-content" id="active-comment">
@@ -263,11 +263,11 @@
             complete: function(results) {
                 const data = results.data;
                 
-                // 1. Grab the Total Signatures from the first row (Multiplier Removed)
-                if(data.length > 0 && data[0]['Total Signatures']) {
-                    let trueCount = parseInt(data[0]['Total Signatures'].replace(/,/g, ''), 10);
+                // 1. Grab the Total Supporters from the first row
+                if(data.length > 0 && data[0]['Total Supporters']) {
+                    let trueCount = parseInt(data[0]['Total Supporters'].replace(/,/g, ''), 10);
                     if(!isNaN(trueCount)) {
-                        document.getElementById('signature-count').innerText = trueCount.toLocaleString();
+                        document.getElementById('supporter-count').innerText = trueCount.toLocaleString();
                     }
                 }
 
