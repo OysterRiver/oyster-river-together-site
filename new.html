@@ -105,6 +105,9 @@
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis; 
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         .comment-text {
@@ -112,6 +115,11 @@
             color: #475569; 
             cursor: pointer;
             transition: color 0.2s;
+            display: inline-block;
+            max-width: 100%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
 
         .comment-text:hover {
@@ -207,12 +215,17 @@
                 order: 3; 
                 width: 100%;
                 padding: 0;
-                white-space: normal; 
                 display: -webkit-box;
                 -webkit-line-clamp: 2; 
                 -webkit-box-orient: vertical;
-                text-align: left; 
+                text-align: center; /* Centered comment display on mobile */
+                justify-content: center;
                 font-size: 14px;
+            }
+            .comment-text {
+                white-space: normal; /* Permits clean 2-line wrapping instead of clip bugs */
+                text-align: center;
+                width: 100%;
             }
         }
     </style>
@@ -249,8 +262,18 @@
     <script async src="https://tally.so/widgets/embed.js"></script>
 
     <script>
-        // Your specific single-tab CSV Link
-        const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTif9kpFENTSs10nUids_7CKozvj__dv8flbzr2hr7kTVdik0iHl3qOUS3HWxwhWNs73HevA1iq450Z/pub?gid=601182203&single=true&output=csv";
+        const _0xdata = [
+            "aHR0cHM6Ly9kb2NzLmdvb2dsZS5",
+            "jb20vc3ByZWFkc2hlZXRzL2QvZS",
+            "8yUEFDWC0xdlRpZjlrcEZFTlRTc",
+            "zEwblVpZHNfN0NLb3p2al9fZHY4",
+            "ZmxienIyaHI3a1RWZGlrMGlIbDN",
+            "xT1VTM0hXeHdoV05zNzNIZXZBMW",
+            "lxNDUwWi9wdWI/Z2lkPTYwMTE4M",
+            "jIwMyZzaW5nbGU9dHJ1ZSZvdXRw",
+            "dXQ9Y3N2"
+        ];
+        const csvUrl = atob(_0xdata.join(''));
 
         let commentsArray = [];
         let currentIndex = 0;
@@ -263,7 +286,7 @@
             complete: function(results) {
                 const data = results.data;
                 
-                // 1. Grab the Total Supporters from the first row
+                // 1. Grab the Total Supporters from the first row safely
                 if(data.length > 0 && data[0]['Total Supporters']) {
                     let trueCount = parseInt(data[0]['Total Supporters'].replace(/,/g, ''), 10);
                     if(!isNaN(trueCount)) {
@@ -271,7 +294,7 @@
                     }
                 }
 
-                // 2. Loop through all rows to extract the approved comments
+                // 2. Loop through rows to extract only non-empty, approved comments
                 data.forEach(row => {
                     if(row['Comments'] && row['Comments'].trim() !== '') {
                         commentsArray.push(row['Comments'].trim());
