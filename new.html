@@ -286,6 +286,8 @@
         
         const rawCsvUrl = atob(_0xdata.join(''));
         const formUrl = atob(_0xform.join(''));
+        
+        // Cache-busting parameter added to ensure the absolute latest row modifications pull through immediately
         const csvUrl = rawCsvUrl + "&t=" + new Date().getTime();
 
         document.getElementById('main-form').setAttribute('data-tally-src', formUrl);
@@ -295,17 +297,16 @@
         let carouselTimer = null;
         let isPaused = false;
 
-        // FORCE FULL FILE DOWNLOAD FIRST (Blocks processing until 100% of data is fetched)
+        // Fetching full file directly to maintain chronological data processing integrity
         fetch(csvUrl)
             .then(response => response.text())
             .then(csvText => {
-                // Pass the complete raw text directly to PapaParse
                 Papa.parse(csvText, {
                     header: true,
                     complete: function(results) {
                         const data = results.data;
                         
-                        // 1. Set total supporter count from row 1
+                        // 1. Process Supporter Count
                         if(data.length > 0 && data[0]['Total Supporters']) {
                             let trueCount = parseInt(data[0]['Total Supporters'].replace(/,/g, ''), 10);
                             if(!isNaN(trueCount)) {
@@ -313,18 +314,18 @@
                             }
                         }
 
-                        // 2. Parse all comments into the array from the *complete* file
+                        // 2. Build Comments Array sequentially (Chronological submission order)
                         data.forEach(row => {
                             if(row['Comments'] && row['Comments'].trim() !== '') {
                                 commentsArray.push(row['Comments'].trim());
                             }
                         });
 
-                        // 3. Shuffle the entire finalized deck and begin display sequence
+                        // 3. Mount item zero and start standard playback loop
                         if(commentsArray.length > 0) {
-                            shuffleArray(commentsArray); 
                             currentIndex = 0;
-                            displayCurrentComment();   
+                            showComment(currentIndex);
+                            startTimer();
                         } else {
                             document.getElementById('active-comment').innerHTML = "<span class='comment-text'>No comments yet.</span>";
                         }
@@ -336,56 +337,34 @@
                 document.getElementById('active-comment').innerHTML = "<span class='comment-text'>Unable to load comments.</span>";
             });
 
-        function shuffleArray(array) {
-            for (let i = array.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [array[i], array[array[j]]] = [array[j], array[i]];
-            }
-        }
-
-        function displayCurrentComment() {
+        function showComment(index) {
             if(commentsArray.length === 0) return;
             
+            if(index >= commentsArray.length) currentIndex = 0;
+            else if(index < 0) currentIndex = commentsArray.length - 1;
+            else currentIndex = index;
+
             let rawComment = commentsArray[currentIndex];
             document.getElementById('active-comment').innerHTML = 
                 `<span class="comment-text" onclick="openModal()" title="Click to read full comment">"${rawComment}"</span>`;
-            
-            startTimer();
-        }
-
-        function navigateCarousel(step) {
-            if(commentsArray.length === 0) return;
-            
-            clearTimeout(carouselTimer);
-            currentIndex += step;
-
-            if(currentIndex >= commentsArray.length) {
-                shuffleArray(commentsArray);
-                currentIndex = 0;
-            } else if(currentIndex < 0) {
-                currentIndex = commentsArray.length - 1;
-            }
-
-            displayCurrentComment();
         }
 
         function startTimer() {
-            clearTimeout(carouselTimer);
+            clearInterval(carouselTimer);
             if (isPaused || commentsArray.length === 0) return;
 
-            let currentCommentText = commentsArray[currentIndex];
-            let wordCount = currentCommentText.split(/\s+/).filter(Boolean).length;
-            
-            let calculatedDelay = 3000 + (wordCount * 300);
-            let finalDelay = Math.max(4000, Math.min(calculatedDelay, 12000));
+            // Stable 7-second standard intervals
+            carouselTimer = setInterval(() => {
+                showComment(currentIndex + 1);
+            }, 7000); 
+        }
 
-            carouselTimer = setTimeout(() => {
-                navigateCarousel(1); 
-            }, finalDelay); 
+        function resetTimer() {
+            startTimer();
         }
 
         function openModal() {
-            clearTimeout(carouselTimer);
+            clearInterval(carouselTimer);
             document.getElementById('modal-text').innerText = '"' + commentsArray[currentIndex] + '"';
             document.getElementById('comment-modal').style.display = 'flex';
             
@@ -401,15 +380,22 @@
             startTimer();
         }
 
-        document.getElementById('btn-next').addEventListener('click', () => navigateCarousel(1));
-        document.getElementById('btn-prev').addEventListener('click', () => navigateCarousel(-1));
+        document.getElementById('btn-next').addEventListener('click', () => {
+            showComment(currentIndex + 1);
+            resetTimer(); 
+        });
+
+        document.getElementById('btn-prev').addEventListener('click', () => {
+            showComment(currentIndex - 1);
+            resetTimer();
+        });
 
         document.getElementById('btn-pause').addEventListener('click', (e) => {
             isPaused = !isPaused;
             e.target.innerText = isPaused ? '▶' : '⏸';
             e.target.title = isPaused ? 'Play' : 'Pause';
             if (isPaused) {
-                clearTimeout(carouselTimer);
+                clearInterval(carouselTimer);
             } else {
                 startTimer();
             }
