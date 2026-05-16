@@ -102,12 +102,11 @@
             padding: 0 20px;
             text-align: center;
             font-size: 15px;
-            white-space: nowrap;
             overflow: hidden;
-            text-overflow: ellipsis; 
             display: flex;
             align-items: center;
             justify-content: center;
+            min-width: 0; /* Prevents flex children from bursting the container boundaries */
         }
 
         .comment-text {
@@ -115,11 +114,13 @@
             color: #475569; 
             cursor: pointer;
             transition: color 0.2s;
-            display: inline-block;
+            display: block;
+            width: 100%;
             max-width: 100%;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
+            box-sizing: border-box;
         }
 
         .comment-text:hover {
@@ -215,22 +216,19 @@
                 order: 3; 
                 width: 100%;
                 padding: 0;
-                display: -webkit-box;
-                -webkit-line-clamp: 2; 
-                -webkit-box-orient: vertical;
+                display: block;
                 text-align: center; 
-                justify-content: center;
                 font-size: 14px;
+                box-sizing: border-box;
             }
             .comment-text {
                 white-space: normal; 
                 text-align: center;
-                width: 100%;
                 display: -webkit-box;
-                -webkit-line-clamp: 2; /* Safely bounds mobile text to 2 lines max */
+                -webkit-line-clamp: 2; 
                 -webkit-box-orient: vertical;
                 overflow: hidden;
-                text-overflow: ellipsis; /* Appends the ... cleanly on mobile if it exceeds 2 lines */
+                text-overflow: ellipsis; 
             }
         }
     </style>
@@ -267,7 +265,6 @@
     <script async src="https://tally.so/widgets/embed.js"></script>
 
     <script>
-        // Data arrays are Base64 encoded to obscure raw source URLs
         const _0xdata = [
             "aHR0cHM6Ly9kb2NzLmdvb2dsZS5",
             "jb20vc3ByZWFkc2hlZXRzL2QvZS",
@@ -328,7 +325,6 @@
             }
         });
 
-        // --- Display and Carousel Logic ---
         function showComment(index) {
             if(commentsArray.length === 0) return;
             
@@ -338,6 +334,8 @@
 
             let rawComment = commentsArray[currentIndex];
             
+            // Re-enforcing structural styles right during internal string injection 
+            // to completely avoid initial layout shifting bugs
             document.getElementById('active-comment').innerHTML = 
                 `<span class="comment-text" onclick="openModal()" title="Click to read full comment">"${rawComment}"</span>`;
         }
